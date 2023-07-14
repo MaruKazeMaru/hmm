@@ -20,8 +20,8 @@ class MarkovModel{
     ~MarkovModel();
 
     int* create_random_sequence(int* sequence_size);
-    float calc_obs_signal_prob(int* sequence);
-    int* estimate_path(int* sequence, float* obs_signal_prob);
+    float calc_obs_sequence_prob(int sequence_size, int* sequence);
+    //int* estimate_path(int sequence_size, int* sequence, float* obs_signal_prob);
 };
 
 class MarkovModel::Node{
@@ -35,6 +35,7 @@ class MarkovModel::Node{
 
     void set_Node(int symbol_num, float* obs_symbol_probs_ratio);
     int create_random_symbol();
+    float calc_obs_symbol_prob(int symbol) { return obs_symbol_probs[symbol]; };
 };
 
 int estimate_model(int* sequence, MarkovModel* models, float* obs_model_probs);

@@ -86,3 +86,81 @@ int* MarkovModel::create_random_sequence(int* sequence_size){
 
     return ret_seq;
 }
+
+float MarkovModel::calc_obs_sequence_prob(int sequence_size, int* sequence){
+    int urn_num = node_num - 2;
+
+    float** dp = new float*[2];
+    dp[0] = new float[urn_num];
+    dp[1] = new float[urn_num];
+
+    // init dp
+    for(int j = 0; j < urn_num; ++j)
+        dp[1][j] = transition_probs[0][j + 1] * nodes[j + 1].calc_obs_symbol_prob(sequence[0]);
+
+    // calc dp
+    for(int n = 1; n < sequence_size; ++n){
+        for(int j = 0; j < urn_num; ++j)
+            dp[0][j] = dp[1][j];
+
+        for(int j = 0; j < urn_num; ++j){
+            dp[1][j] = .0f;
+            for(int i = 0; i < urn_num; ++i)
+                dp[1][j] += dp[0][i] * transition_probs[i][j] * nodes[j + 1].calc_obs_symbol_prob(sequence[n]);
+        }
+    }
+
+    float prob = .0f;
+    for(int i = 0; i < urn_num; ++i)
+        prob += dp[1][i];
+
+    delete dp[0];
+    delete dp[1];
+    delete[] dp;
+
+    return prob;
+}
+
+/*
+int* MarkovModel::estimate_path(int sequence_size, int*sequence, float* obs_sequence_prob){
+    int urn_num = node_num - 2;
+
+    float** dp = new float*[2];
+    dp[0] = new float[urn_num];
+    dp[1] = new float[urn_num];
+
+    int** route = new int*[sequence_size];
+    for(int n = 0; n < sequence_size; ++n)
+        route[n] = new int[urn_num];
+
+    // init dp
+    for(int j = 0; j < urn_num; ++j)
+        dp[1][j] = transition_probs[0][j + 1] * nodes[j + 1].calc_obs_symbol_prob(sequence[0]);
+
+    // calc dp
+    for(int n = 1; n < sequence_size; ++n){
+        for(int j = 0; j < urn_num; ++j)
+            dp[0][j] = dp[1][j];
+
+        for(int j = 0; j < urn_num; ++j){
+            dp[1][j] = .0f;
+            for(int i = 0; i < urn_num; ++i)
+                dp[1][j] += dp[0][i] * transition_probs[i][j] * nodes[j + 1].calc_obs_symbol_prob(sequence[n]);
+        }
+    }
+
+    for(int n = 0; n < sequence_size; ++n)
+        delete route[n];
+    delete[] route;
+
+    float prob = .0f;
+    for(int i = 0; i < urn_num; ++i)
+        prob += dp[1][i];
+
+    delete dp[0];
+    delete dp[1];
+    delete[] dp;
+
+    return prob;
+}
+*/
