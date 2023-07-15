@@ -106,13 +106,13 @@ float MarkovModel::calc_obs_sequence_prob(int sequence_size, int* sequence){
         for(int j = 0; j < urn_num; ++j){
             dp[1][j] = .0f;
             for(int i = 0; i < urn_num; ++i)
-                dp[1][j] += dp[0][i] * transition_probs[i][j] * nodes[j + 1].calc_obs_symbol_prob(sequence[n]);
+                dp[1][j] += dp[0][i] * transition_probs[i + 1][j + 1] * nodes[j + 1].calc_obs_symbol_prob(sequence[n]);
         }
     }
 
     float prob = .0f;
     for(int i = 0; i < urn_num; ++i)
-        prob += dp[1][i];
+        prob += dp[1][i] * transition_probs[i + 1][node_num - 1];
 
     delete dp[0];
     delete dp[1];
