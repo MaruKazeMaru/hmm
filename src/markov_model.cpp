@@ -164,3 +164,111 @@ int* MarkovModel::estimate_path(int sequence_size, int*sequence, float* obs_sequ
     return prob;
 }
 */
+
+void MarkovModel::study(int sequece_num, int* sequence_sizes, int** sequences, int epoch, float** diffs){
+}
+
+void MarkovModel::study_once(int sequence_num, int* sequence_sizes, int** sequences, float* diff){
+    float** delta_transition_probs = new float*[node_num - 1];
+    for(int i = 0; i < node_num - 1; ++i){
+        delta_transition_probs[i] = new float[node_num];
+        for(int j = 0; j < node_num; ++j)
+            delta_transition_probs[i][j] = .0f;        
+    }
+
+    int urn_num = node_num - 2;
+    float** delta_obs_symbol_probss = new float*[urn_num];
+    for(int i = 0; i < urn_num; ++i){
+        delta_obs_symbol_probss[i] = new float[symbol_num];
+        for(int k = 0; k < symbol_num; ++k)
+            delta_obs_symbol_probss[i][k] = .0f;
+    }
+
+
+    for(int t = 0; t < sequence_num; ++t){
+        int seq_size = sequence_sizes[t];
+        int* seq = sequences[t];
+
+    }
+
+    for(int i = 0; i < urn_num; ++i)
+        delete delta_obs_symbol_probss[i];
+    delete delta_obs_symbol_probss;
+
+    for(int i = 0; i < node_num - 1; ++i)
+        delete delta_transition_probs[i];
+    delete delta_transition_probs;
+
+    return;
+}
+
+void MarkovModel::calc_rate_path(
+    int* path, float path_prob, int seq_size, int* seq, int rem,
+    float** new_transition_probs, float** new_obs_symbol_probss
+){
+
+    if(rem == 0){
+        if(transition_probs[path[seq_size - 1]][node_num - 1] <= .0f)
+            return;
+
+        path_prob *= transition_probs[path[seq_size - 1]][node_num - 1];
+
+        int i_max = node_num - 2;
+        float** transition_counts = new float*[node_num - 1];
+
+        for(int i = 1; i <= i_max; ++i){
+            transition_counts[i] = new float[node_num];
+            for(int j = 0; j < node_num; ++j)
+                transition_counts[i][j] = 0;
+        }
+
+        for(int n = 1; n < seq_size; ++n)
+            transition_counts[path[n - 1]][path[n]] += 1;
+        transition_counts[path[seq_size - 1]][node_num - 1] += 1;
+
+        new_transition_probs[0][path[0]] += path_prob;
+        for(int i = 1; i <= i_max; ++i){
+            float sum = .0f;
+            for(int j = 0; j < node_num; ++j)
+                sum += transition_counts[i][j];
+
+            if(sum > .0f)
+                for(int j = 0; j < node_num; ++j)
+                    new_transition_probs[i][j] += path_prob * transition_counts[i][j] / sum;
+
+            delete transition_counts[i];
+        }
+
+        delete transition_counts;
+
+
+
+        i_max = node_num - 3;
+        float** obs_symbol_countss = new float*[node_num - 2];
+        for(int i = 0 ; i <= i_max; ++i){
+            obs_symbol_countss[i] = new float[symbol_num];
+            for(int k = 0; k < symbol_num; ++k)
+                obs_symbol_countss[i][k] = .0f;
+        }
+
+        for(int n = 0; n < seq_size; ++n)
+            obs_symbol_countss[path[n]][seq[n]] += 1.0f;
+
+        for(int i = 0; i <= i_max; ++i){
+            float sum = .0f;
+            for(int k = 0; k < symbol_num; ++k)
+                sum += obs_symbol_countss[i][k];
+
+            if(sum > .0f)
+                for(int k = 0; k < symbol_num; ++k)
+                    new_obs_symbol_probss[i][k] += path_prob * obs_symbol_countss[i][k] / sum;
+
+            delete obs_symbol_countss[i];
+        }
+
+        delete obs_symbol_countss;
+    }
+    else{
+
+    }
+}
