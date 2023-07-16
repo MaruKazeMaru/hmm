@@ -269,6 +269,24 @@ void MarkovModel::calc_rate_path(
         delete obs_symbol_countss;
     }
     else{
+        int from;
+        if(rem == seq_size)
+            from = 0;
+        else
+            from = path[seq_size - rem - 1];
 
+        int i_max = node_num - 2;
+        for(int i = 1; i <= i_max; +i){
+            float p = transition_probs[from][i] * nodes[i].calc_obs_symbol_prob(seq[seq_size - rem]);
+            if(p <= .0f)
+                continue;
+
+            path[seq_size - rem] = i;
+            calc_rate_path(
+                path, path_prob * p,
+                seq_size, seq, rem - 1,
+                new_transition_probs, new_obs_symbol_probss
+            );
+        }
     }
 }
