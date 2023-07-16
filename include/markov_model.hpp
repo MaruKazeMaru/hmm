@@ -22,6 +22,7 @@ class MarkovModel{
 
     public:
     MarkovModel(int symbol_num, int node_num, float** transition_probs, float** obs_symbol_probs_ratios);
+    MarkovModel(int symbol_num, int node_num, bool** connected);
     ~MarkovModel();
 
     int* create_random_sequence(int* sequence_size);
@@ -30,20 +31,21 @@ class MarkovModel{
 
     void study(int sequence_num, int* sequence_sizes, int** sequences, int epoch, float** diffs);
     void study_once(int sequence_num, int* sequence_sizes, int** sequences, float* diff);
+
+    void print();
 };
 
 class MarkovModel::Node{
-    private:
+    public:
     int symbol_num;
     float* obs_symbol_probs;
 
-    public:
     Node();
     ~Node();
 
+    void set_Node(int symbol_num);
     void set_Node(int symbol_num, float* obs_symbol_probs_ratio);
     int create_random_symbol();
-    float calc_obs_symbol_prob(int symbol) { return obs_symbol_probs[symbol]; };
 };
 
 int estimate_model(int* sequence, MarkovModel* models, float* obs_model_probs);

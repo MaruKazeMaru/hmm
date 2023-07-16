@@ -8,7 +8,7 @@ MarkovModel::MarkovModel(int symbol_num, int node_num, float** transition_probs,
     this->symbol_num = symbol_num;
     this->node_num = node_num;
 
-    this->transition_probs = new float*[node_num];
+    this->transition_probs = new float*[node_num - 1];
     for(int i = 0; i < node_num - 1; ++i){
         this->transition_probs[i] = new float[node_num];
         for(int j = 0; j < node_num; ++j)
@@ -18,6 +18,34 @@ MarkovModel::MarkovModel(int symbol_num, int node_num, float** transition_probs,
     this->nodes = new MarkovModel::Node[node_num];
     for(int i = 1; i < node_num - 1; ++i)
         this->nodes[i].set_Node(symbol_num, obs_symbol_probss[i - 1]);
+}
+
+MarkovModel::MarkovModel(int symbol_num, int node_num, bool** connected){
+    this->symbol_num = symbol_num;
+    this->node_num = node_num;
+
+    this->transition_probs = new float*[node_num - 1];
+    for(int i = 0; i < node_num - 1; ++i){
+        this->transition_probs[i] = new float[node_num];
+
+        float sum = .0f;
+        for(int j = 0; j < node_num; ++j){
+            if(connected[i][j]){
+                this->transition_probs[i][j] = 1.0f;
+                sum += 1.0f;
+            }
+            else
+                this->transition_probs[i][j] = 0.0f;
+        }
+
+        if(sum > .0f)
+            for(int j = 0; j < node_num; ++j)
+                this->transition_probs[i][j] /= sum;
+    }
+
+    this->nodes = new MarkovModel::Node[node_num];
+    for(int i = 1; i < node_num - 1; ++i)
+        this->nodes[i].set_Node(symbol_num);
 }
 
 MarkovModel::~MarkovModel(){
@@ -32,15 +60,27 @@ MarkovModel::Node::Node(){
     this->obs_symbol_probs = new float[0];
 }
 
+void MarkovModel::Node::set_Node(int symbol_num){
+    this->symbol_num = symbol_num;
+    float p = 1.0f / (float)symbol_num;
+
+    this->obs_symbol_probs = new float[symbol_num];
+    for(int k = 0; k < symbol_num; ++k)
+        this->obs_symbol_probs[k] = p;
+
+    return;
+}
+
 void MarkovModel::Node::set_Node(int symbol_num, float* obs_symbol_probs){
     this->symbol_num = symbol_num;
-
     this->obs_symbol_probs = new float[symbol_num];
     for(int k = 0; k < symbol_num; ++k)
         this->obs_symbol_probs[k] = obs_symbol_probs[k];
 
 //    printf("symbol_num=%d\n", this->symbol_num);
 //    printf("obs_symbol_probs=[%f, %f, %f]\n", this->obs_symbol_probs[0], this->obs_symbol_probs[1], this->obs_symbol_probs[2]);
+
+    return;
 }
 
 MarkovModel::Node::~Node(){
@@ -96,7 +136,7 @@ float MarkovModel::calc_obs_sequence_prob(int sequence_size, int* sequence){
 
     // init dp
     for(int j = 0; j < urn_num; ++j)
-        dp[1][j] = transition_probs[0][j + 1] * nodes[j + 1].calc_obs_symbol_prob(sequence[0]);
+        dp[1][j] = transition_probs[0][j + 1] * nodes[j + 1].obs_symbol_probs[sequence[0]];
 
     // calc dp
     for(int n = 1; n < sequence_size; ++n){
@@ -106,7 +146,7 @@ float MarkovModel::calc_obs_sequence_prob(int sequence_size, int* sequence){
         for(int j = 0; j < urn_num; ++j){
             dp[1][j] = .0f;
             for(int i = 0; i < urn_num; ++i)
-                dp[1][j] += dp[0][i] * transition_probs[i + 1][j + 1] * nodes[j + 1].calc_obs_symbol_prob(sequence[n]);
+                dp[1][j] += dp[0][i] * transition_probs[i + 1][j + 1] * nodes[j + 1].obs_symbol_probs[sequence[n]];
         }
     }
 
@@ -135,7 +175,7 @@ int* MarkovModel::estimate_path(int sequence_size, int*sequence, float* obs_sequ
 
     // init dp
     for(int j = 0; j < urn_num; ++j)
-        dp[1][j] = transition_probs[0][j + 1] * nodes[j + 1].calc_obs_symbol_prob(sequence[0]);
+        dp[1][j] = transition_probs[0][j + 1] * nodes[j + 1].get_obs_symbol_prob(sequence[0]);
 
     // calc dp
     for(int n = 1; n < sequence_size; ++n){
@@ -145,7 +185,7 @@ int* MarkovModel::estimate_path(int sequence_size, int*sequence, float* obs_sequ
         for(int j = 0; j < urn_num; ++j){
             dp[1][j] = .0f;
             for(int i = 0; i < urn_num; ++i)
-                dp[1][j] += dp[0][i] * transition_probs[i][j] * nodes[j + 1].calc_obs_symbol_prob(sequence[n]);
+                dp[1][j] += dp[0][i] * transition_probs[i][j] * nodes[j + 1].get_obs_symbol_prob(sequence[n]);
         }
     }
 
@@ -166,38 +206,106 @@ int* MarkovModel::estimate_path(int sequence_size, int*sequence, float* obs_sequ
 */
 
 void MarkovModel::study(int sequece_num, int* sequence_sizes, int** sequences, int epoch, float** diffs){
+    *diffs = new float[epoch];
+    for(int i = 0; i < epoch; ++i)
+        study_once(sequece_num, sequence_sizes, sequences, (*diffs) + i);
+    return;
 }
 
 void MarkovModel::study_once(int sequence_num, int* sequence_sizes, int** sequences, float* diff){
-    float** delta_transition_probs = new float*[node_num - 1];
-    for(int i = 0; i < node_num - 1; ++i){
-        delta_transition_probs[i] = new float[node_num];
+    int i_max_tr = node_num - 2;
+    float** new_transition_probs = new float*[node_num - 1];
+    for(int i = 0; i <= i_max_tr; ++i){
+        new_transition_probs[i] = new float[node_num];
         for(int j = 0; j < node_num; ++j)
-            delta_transition_probs[i][j] = .0f;        
+            new_transition_probs[i][j] = .0f;        
     }
 
-    int urn_num = node_num - 2;
-    float** delta_obs_symbol_probss = new float*[urn_num];
-    for(int i = 0; i < urn_num; ++i){
-        delta_obs_symbol_probss[i] = new float[symbol_num];
+    int i_max_os = node_num - 3;
+    float** new_obs_symbol_probss = new float*[node_num - 2];
+    for(int i = 0; i <= i_max_os; ++i){
+        new_obs_symbol_probss[i] = new float[symbol_num];
         for(int k = 0; k < symbol_num; ++k)
-            delta_obs_symbol_probss[i][k] = .0f;
+            new_obs_symbol_probss[i][k] = .0f;
     }
 
+    for(int s = 0; s < sequence_num; ++s){
+        float** new_transition_probs_s = new float*[node_num - 1];
+        for(int i = 0; i <= i_max_tr; ++i){
+            new_transition_probs_s[i] = new float[node_num];
+            for(int j = 0; j < node_num; ++j)
+                new_transition_probs_s[i][j] = .0f;
+        }
 
-    for(int t = 0; t < sequence_num; ++t){
-        int seq_size = sequence_sizes[t];
-        int* seq = sequences[t];
+        float** new_obs_symbol_probss_s = new float*[node_num - 2];
+        for(int i = 0; i <= i_max_os; ++i){
+            new_obs_symbol_probss_s[i] = new float[symbol_num];
+            for(int k = 0; k < symbol_num; ++k)
+                new_obs_symbol_probss[i][k] = .0f;
+        }
 
+        int* path = new int[sequence_sizes[s]];
+        calc_rate_path(path, 1.0f, sequence_sizes[s], sequences[s], sequence_sizes[s], new_transition_probs_s, new_obs_symbol_probss_s);
+        delete path;
+
+        for(int i = 0; i <= i_max_tr; ++i){
+            float sum = .0f;
+            for(int j = 0; j < node_num; ++j)
+                sum += new_transition_probs_s[i][j];
+            if(sum > .0f)
+                for(int j = 0; j < node_num; ++j)
+                    new_transition_probs[i][j] += new_transition_probs_s[i][j] / sum;
+            delete new_transition_probs_s[i];
+        }
+        delete new_transition_probs_s;
+
+        for(int i = 0; i <= i_max_os; ++i){
+            float sum = .0f;
+            for(int k = 0; k < symbol_num; ++k)
+                sum += new_obs_symbol_probss_s[i][k];
+            if(sum > .0f)
+                for(int k = 0; k < symbol_num; ++k)
+                    new_obs_symbol_probss[i][k] += new_obs_symbol_probss_s[i][k] / sum;
+            delete new_obs_symbol_probss_s[i];
+        }
+        delete new_obs_symbol_probss_s;
     }
 
-    for(int i = 0; i < urn_num; ++i)
-        delete delta_obs_symbol_probss[i];
-    delete delta_obs_symbol_probss;
+    float seq_numf = (float)sequence_num;
 
-    for(int i = 0; i < node_num - 1; ++i)
-        delete delta_transition_probs[i];
-    delete delta_transition_probs;
+    for(int i = 0; i <= i_max_tr; ++i)
+        for(int j = 0; j < node_num; ++j)
+            new_transition_probs[i][j] /= seq_numf;
+
+    for(int i = 0; i <= i_max_os; ++i)
+        for(int k = 0; k < symbol_num; ++k)
+            new_obs_symbol_probss[i][k] /= seq_numf;
+
+    *diff = .0f;
+
+    for(int i = 0; i <= i_max_tr; ++i){
+        for(int j = 0; j < node_num; ++j){
+            float t = transition_probs[i][j] - new_transition_probs[i][j];
+            *diff += t * t;
+            transition_probs[i][j] = new_transition_probs[i][j];
+        }
+    }
+
+    for(int i = 0; i <= i_max_os; ++i){
+        for(int k = 0; k < symbol_num; ++k){
+            float t = nodes[i + 1].obs_symbol_probs[k] - new_obs_symbol_probss[i][k];
+            *diff += t * t;
+            nodes[i + 1].obs_symbol_probs[k] = new_obs_symbol_probss[i][k];
+        }
+    }
+
+    for(int i = 0; i <= i_max_tr; ++i)
+        delete new_transition_probs[i];
+    delete new_transition_probs;
+
+    for(int i = 0; i <= i_max_os; ++i)
+        delete new_obs_symbol_probss[i];
+    delete new_obs_symbol_probss;
 
     return;
 }
@@ -211,26 +319,36 @@ void MarkovModel::calc_rate_path(
         if(transition_probs[path[seq_size - 1]][node_num - 1] <= .0f)
             return;
 
+
         path_prob *= transition_probs[path[seq_size - 1]][node_num - 1];
+
+        /*
+        printf("%d", path[0]);
+        for(int t = 1; t < seq_size; ++t)
+            printf(" , %d", path[t]);
+        printf(" : %f%%\n", path_prob);
+        */
 
         int i_max = node_num - 2;
         float** transition_counts = new float*[node_num - 1];
 
-        for(int i = 1; i <= i_max; ++i){
+
+        for(int i = 0; i <= i_max; ++i){
             transition_counts[i] = new float[node_num];
             for(int j = 0; j < node_num; ++j)
-                transition_counts[i][j] = 0;
+                transition_counts[i][j] = .0f;
         }
 
+        transition_counts[0][path[0]] = 1.0f;
         for(int n = 1; n < seq_size; ++n)
-            transition_counts[path[n - 1]][path[n]] += 1;
-        transition_counts[path[seq_size - 1]][node_num - 1] += 1;
+            transition_counts[path[n - 1]][path[n]] += 1.0f;
+        transition_counts[path[seq_size - 1]][node_num - 1] = 1.0f;
 
-        new_transition_probs[0][path[0]] += path_prob;
-        for(int i = 1; i <= i_max; ++i){
+        for(int i = 0; i <= i_max; ++i){
             float sum = .0f;
             for(int j = 0; j < node_num; ++j)
                 sum += transition_counts[i][j];
+            //printf("sum = %d\n", (int)sum);
 
             if(sum > .0f)
                 for(int j = 0; j < node_num; ++j)
@@ -252,7 +370,7 @@ void MarkovModel::calc_rate_path(
         }
 
         for(int n = 0; n < seq_size; ++n)
-            obs_symbol_countss[path[n]][seq[n]] += 1.0f;
+            obs_symbol_countss[path[n] - 1][seq[n]] += 1.0f;
 
         for(int i = 0; i <= i_max; ++i){
             float sum = .0f;
@@ -276,12 +394,13 @@ void MarkovModel::calc_rate_path(
             from = path[seq_size - rem - 1];
 
         int i_max = node_num - 2;
-        for(int i = 1; i <= i_max; +i){
-            float p = transition_probs[from][i] * nodes[i].calc_obs_symbol_prob(seq[seq_size - rem]);
+        for(int i = 1; i <= i_max; ++i){
+            float p = transition_probs[from][i] * nodes[i].obs_symbol_probs[seq[seq_size - rem]];
             if(p <= .0f)
                 continue;
 
             path[seq_size - rem] = i;
+
             calc_rate_path(
                 path, path_prob * p,
                 seq_size, seq, rem - 1,
@@ -289,4 +408,29 @@ void MarkovModel::calc_rate_path(
             );
         }
     }
+
+
+    return;
+}
+
+void MarkovModel::print(){
+    printf("number of symbols = %d\n", symbol_num);
+    printf("number of nodes = %d\n", node_num);
+    printf("transition probabilities = \n");
+    for(int i = 0; i < node_num - 1; ++i){
+        printf("%f", transition_probs[i][0]);
+        for(int j = 1; j < node_num; ++j)
+            printf(" , %f", transition_probs[i][j]);
+        printf("\n");
+    }
+
+    printf("observe symbol probabilities = \n");
+    for(int i = 1; i < node_num - 1; ++i){
+        printf("%f", nodes[i].obs_symbol_probs[0]);
+        for(int k = 1; k < symbol_num; ++k)
+            printf(" , %f", nodes[i].obs_symbol_probs[k]);
+        printf("\n");
+    }
+
+    return;
 }
