@@ -80,8 +80,12 @@ int main (void){
 
     int seq_num;
     scanf("%d", &seq_num);
+    if(seq_num <= 0)
+        return 1;
 
-    if(seq_num < 0)
+    int epoch;
+    scanf("%d", &epoch);
+    if(epoch <= 0)
         return 1;
 
     printf("create sequences\n");
@@ -89,14 +93,14 @@ int main (void){
     int* seq_sizes = new int[seq_num];
     for(int t = 0; t < seq_num; ++t){
         seqs[t] = mm_original.create_random_sequence(seq_sizes + t);
-        printf("%d", seqs[t][0]);
+        printf("%2d : %d", t + 1, seqs[t][0]);
         for(int n = 1; n < seq_sizes[t]; ++n)
             printf(" , %d", seqs[t][n]);
         printf("\n");
     }
 
     printf("\nstudy start\ndiff = \n");
-    for(int i = 0; i < 30; ++i){
+    for(int i = 0; i < epoch; ++i){
         float diff;
         mm_unknown.study_once(seq_num, seq_sizes, seqs, &diff);
         printf("%f\n", diff);

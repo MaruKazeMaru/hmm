@@ -9,4 +9,4 @@ g++  -I../../include -c ../../src/markov_model.cpp #../../src/parser.cpp
 ar rcs libmarkov_model.a markov_model.o
 #ar rcs libparser.a parser.o
 
-g++ -o debug.out ../test.cpp -I../../include -L. -lmarkov_model #-lparser
+g++ -o debug.out ../study.cpp -I../../include -L. -lmarkov_model #-lparser
