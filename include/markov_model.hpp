@@ -48,6 +48,6 @@ class MarkovModel::Node{
     int create_random_symbol();
 };
 
-int estimate_model(int* sequence, MarkovModel* models, float* obs_model_probs);
+//int estimate_model(int* sequence, MarkovModel* models, float* obs_model_probs);
 
 #endif

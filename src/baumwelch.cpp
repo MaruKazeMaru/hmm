@@ -88,34 +88,21 @@ int main (void){
     if(epoch <= 0)
         return 1;
 
-    printf("create sequences\n");
     int** seqs = new int*[seq_num];
     int* seq_sizes = new int[seq_num];
-    for(int t = 0; t < seq_num; ++t){
+    for(int t = 0; t < seq_num; ++t)
         seqs[t] = mm_original.create_random_sequence(seq_sizes + t);
-        printf("%03d : %d", t + 1, seqs[t][0]);
-        for(int n = 1; n < seq_sizes[t]; ++n)
-            printf(" , %d", seqs[t][n]);
-        printf("\n");
-    }
 
-    printf("\nstudy start\ndiff = \n");
     for(int i = 0; i < epoch; ++i){
         float diff;
         mm_unknown.study_once(seq_num, seq_sizes, seqs, &diff);
-        printf("%f\n", diff);
-        //mm.print();
-        if(diff < 0.0000005){
-            printf("converged in %dth loop\n", i + 1);
+        if(diff < 0.0000005)
             break;
-        }
     }
     delete seq_sizes;
     delete seqs;
 
-    printf("\nend study\n");
     mm_unknown.print();
-
 
     return 0;
 }

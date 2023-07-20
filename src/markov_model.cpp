@@ -241,7 +241,7 @@ void MarkovModel::study_once(int sequence_num, int* sequence_sizes, int** sequen
         for(int i = 0; i <= i_max_os; ++i){
             new_obs_symbol_probss_s[i] = new float[symbol_num];
             for(int k = 0; k < symbol_num; ++k)
-                new_obs_symbol_probss[i][k] = .0f;
+                new_obs_symbol_probss_s[i][k] = .0f;
         }
 
         int* path = new int[sequence_sizes[s]];
@@ -266,21 +266,22 @@ void MarkovModel::study_once(int sequence_num, int* sequence_sizes, int** sequen
             if(sum > .0f)
                 for(int k = 0; k < symbol_num; ++k)
                     new_obs_symbol_probss[i][k] += new_obs_symbol_probss_s[i][k] / sum;
+            /*
             else
                 printf("o\n");
+            */
             delete new_obs_symbol_probss_s[i];
         }
         delete new_obs_symbol_probss_s;
     }
 
-    float seq_numf = (float)sequence_num;
+    //float seq_numf = (float)sequence_num;
 
-    /*
     for(int i = 0; i <= i_max_tr; ++i){
         float sum = .0f;
         for(int j = 0; j < node_num; ++j)
             sum += new_transition_probs[i][j];
-        printf("sum = %f\n", sum);
+        //printf("sum = %f\n", sum);
         if(sum > .0f)
             for(int j = 0; j < node_num; ++j)
                 new_transition_probs[i][j] /= sum;
@@ -291,12 +292,11 @@ void MarkovModel::study_once(int sequence_num, int* sequence_sizes, int** sequen
         for(int k = 0; k < symbol_num; ++k)
             sum += new_obs_symbol_probss[i][k];
 
-        printf("sum = %f\n", sum);
+        //printf("sum = %f\n", sum);
         if(sum > .0f)
             for(int k = 0; k < symbol_num; ++k)
                 new_obs_symbol_probss[i][k] /= sum;
     }
-    */
 
     *diff = .0f;
 
