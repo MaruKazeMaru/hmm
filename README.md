@@ -10,7 +10,7 @@ HMM（Hidden Markov Model, 隠れマルコフモデル）をシミュレート�
 
 ## 動作確認済み環境
 wsl2<br>
-Ubuntu 20.04
+Ubuntu 20.04<br>
 gcc 9.4
 
 ## 使用方法
