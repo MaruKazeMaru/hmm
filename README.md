@@ -53,7 +53,9 @@ i行j列目にはi番目の状態からj番目の状態に遷移する確率<br>
 3<br>
 シンボル列の出現確率が出力されます。
 ##### 実行例
-下記のようなモデル、シンボル列を入力したいとします。
+下図のようなモデル、シンボル列を入力したいとします。
+![モデルの例](.image/model_example.png "モデルの例")
+![シンボル列の例](.image/seq_example.png "シンボル列の例")
 
 入力
 ```
@@ -101,7 +103,29 @@ build/baumwelch.out
 
 入力
 ```
+3
+2
+0.4,0.6
+0,1,0
+0,0.8,0.2
+100
+100
 ```
 出力
 ```
+number of nodes = 3
+number of symbols = 2
+transition probabilities = 
+0.000000 , 1.000000 , 0.000000
+0.000000 , 0.575710 , 0.424290
+observe symbol probabilities = 
+0.395166 , 0.604834
 ```
+
+## ライセンス
+MITライセンスです<br>
+[LICENSE](./LICENSE "./LICENSE")をお読みください。
+
+## 参考
+23年度の認識工学の授業<br>
+Rabiner：“An Introduction to Hidden Markov Models” IEEE ASSP Magazine, January, 1986
